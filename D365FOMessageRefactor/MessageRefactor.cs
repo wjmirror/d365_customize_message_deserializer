@@ -17,21 +17,31 @@ public class MessageRefactor
 
     [Function(nameof(MessageRefactor))]
     [ServiceBusOutput("d365fo/purchase.invoiceevent", entityType: ServiceBusEntityType.Topic, Connection = "ServiceBusConnection")]
-    public Message<PurchaseOrderMessage> Run([ServiceBusTrigger("dynamics-fo.purchasinginvoice", "azurerefactor", Connection = "ServiceBusConnection")] ServiceBusReceivedMessage message)
+    public async Task<Message<PurchaseOrderMessage>?> Run([ServiceBusTrigger("dynamics-fo.purchasinginvoice", "azurerefactor", Connection = "ServiceBusConnection")] ServiceBusReceivedMessage message,
+                                            ServiceBusMessageActions messageActions)
     {
-        var serializer = new DataContractBinarySerializer(typeof(string));
-        var stringMessage = (string)serializer.ReadObject(message.Body.ToStream());
-        _logger.LogInformation($"MessageRefactor receive message:\r\n{stringMessage}");
-
-        //forward 
-        var purchaseOrder = System.Text.Json.JsonSerializer.Deserialize<PurchaseOrderMessage>(stringMessage);
-
-        var purchaseMessage = new Message<PurchaseOrderMessage>()
+        try
         {
-            Name = "Invoice.Received",
-            Content = purchaseOrder
-        };
+            var serializer = new DataContractBinarySerializer(typeof(string));
+            var stringMessage = (string)serializer.ReadObject(message.Body.ToStream());
+            _logger.LogInformation($"MessageRefactor receive message:\r\n{stringMessage}");
 
-        return purchaseMessage;
+            //forward 
+            var purchaseOrder = System.Text.Json.JsonSerializer.Deserialize<PurchaseOrderMessage>(stringMessage);
+
+            var purchaseMessage = new Message<PurchaseOrderMessage>()
+            {
+                Name = "Invoice.Received",
+                Content = purchaseOrder
+            };
+
+            await messageActions.CompleteMessageAsync(message);
+            return purchaseMessage;
+        }
+        catch (Exception ex)
+        {
+            await messageActions.DeadLetterMessageAsync(message, deadLetterReason: ex.Message, deadLetterErrorDescription: ex.ToString());
+            return null;
+        }
     }
 }
