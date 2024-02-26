@@ -21,7 +21,7 @@ namespace d365framework
             var secret = Task.Run(async () => await kvClient.GetSecretAsync("ServiceBusConnection")).Result;
             var serviceBusConnection = secret.Value.Value;
 
-            TopicClient topicClient = Microsoft.ServiceBus.Messaging.TopicClient.CreateFromConnectionString(serviceBusConnection, "dynamics-fo.purchasinginvoice");
+            TopicClient topicClient = TopicClient.CreateFromConnectionString(serviceBusConnection, "dynamics-fo.purchasinginvoice");
 
             var message = new PurchaseOrderMessage()
             {
