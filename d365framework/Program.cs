@@ -55,10 +55,9 @@ namespace d365framework
             };
             string json = JsonSerializer.Serialize(message);
 
-            BrokeredMessage brokeredMessage = new BrokeredMessage(json);
 
-            //System.IO.MemoryStream stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
-            //BrokeredMessage brokeredMessage = new BrokeredMessage(stream, true);
+            System.IO.MemoryStream stream = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(json));
+            BrokeredMessage brokeredMessage = new BrokeredMessage(stream, true);
 
             topicClient.Send(brokeredMessage);
 
